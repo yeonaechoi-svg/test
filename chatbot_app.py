@@ -212,12 +212,12 @@ with tab2:
     generate_button = st.button("✨ 코드 생성", use_container_width=True)
     
     if generate_button and code_request and api_key:
-        code_instructions = f"""당신은 고등학교 1학년 정보 교사입니다.
-
-요청받은 코드를 작성할 때:
-1. 프로그래밍 언어: {language}
-2. 난이도: {difficulty}
-3. 주석: {'포함' if include_comments else '미포함'}
-4. 코드는 실행 가능해야 합니다
-5. 충분한 설명을 함께 제공합니다
-6. 코드 블록은
+        # 문자열 연결로 f-string 오류 해결
+        code_instructions = "당신은 고등학교 1학년 정보 교사입니다.\n\n"
+        code_instructions += "요청받은 코드를 작성할 때:\n"
+        code_instructions += f"1. 프로그래밍 언어: {language}\n"
+        code_instructions += f"2. 난이도: {difficulty}\n"
+        code_instructions += f"3. 주석: {'포함' if include_comments else '미포함'}\n"
+        code_instructions += "4. 코드는 실행 가능해야 합니다\n"
+        code_instructions += "5. 충분한 설명을 함께 제공합니다\n"
+        code_instructions += "6. 코드 블록은
