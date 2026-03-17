@@ -214,4 +214,6 @@ with tab2:
     if generate_button and code_request and api_key:
         # 변수 정의
         comment_status = "포함" if include_comments else "미포함"
-        backtick = "
+        
+        # 코드 지시문 작성
+        code_instructions = "당신은 고등학교 1학년 정보 교사입니다.\n\n요청받은 코드를 작성할 때:\n1. 프로그래밍 언어: " + language + "\n2. 난이도: " + difficulty + "\n3. 주석: " + comment_status + "\n4. 코드는 실행 가능해야 합니다\n5. 충분한 설명을 함께 제공합니다\n6. 코드 블록은
