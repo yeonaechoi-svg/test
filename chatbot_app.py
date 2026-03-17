@@ -1,6 +1,5 @@
 import streamlit as st
 import anthropic
-from datetime import datetime
 
 # 페이지 설정
 st.set_page_config(
@@ -34,44 +33,37 @@ st.markdown("""
         background-color: #f3e5f5;
         border-left: 4px solid #9c27b0;
     }
-    .code-block {
-        background-color: #f5f5f5;
-        border-radius: 5px;
-        padding: 10px;
-        margin: 10px 0;
-        font-family: monospace;
-    }
     </style>
 """, unsafe_allow_html=True)
 
 # 사이드바 설정
 with st.sidebar:
-    st.markdown("### ⚙️ 설정")
-    
+    st.markdown("### 설정")
+
     api_key = st.text_input(
         "Claude API 키를 입력하세요",
         type="password",
         help="https://console.anthropic.com 에서 API 키를 발급받으세요"
     )
-    
+
     st.markdown("---")
     st.markdown("### 📚 학습 도움말")
-    st.info("""
-    **이 챗봇을 활용하세요:**
-    - 정보 과목의 개념 설명 요청
-    - 프로그래밍 코드 작성 및 설명
-    - 학습 전략 및 팁
-    - 과제 도움 (직접 답안 제공 아님)
-    """)
-    
+    st.info(
+        "이 챗봇을 활용하세요:\n"
+        "- 정보 과목의 개념 설명 요청\n"
+        "- 프로그래밍 코드 작성 및 설명\n"
+        "- 학습 전략 및 팁\n"
+        "- 과제 도움 (직접 답안 제공 아님)"
+    )
+
     st.markdown("---")
     st.markdown("### 💡 추천 질문")
-    st.markdown("""
-    - "변수란 무엇인가요?"
-    - "Python에서 for 반복문 사용법"
-    - "알고리즘이란 뭔가요?"
-    - "리스트와 딕셔너리의 차이점"
-    """)
+    st.markdown(
+        "- 변수란 무엇인가요?\n"
+        "- Python에서 for 반복문 사용법\n"
+        "- 알고리즘이란 뭔가요?\n"
+        "- 리스트와 딕셔너리의 차이점"
+    )
 
 # 메인 헤더
 st.markdown("""
@@ -85,135 +77,174 @@ st.markdown("""
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if "teacher_instructions" not in st.session_state:
-    st.session_state.teacher_instructions = """당신은 경험 많은 고등학교 1학년 정보 교사입니다.
-
-역할 및 원칙:
-1. 학생의 질문에 친절하고 이해하기 쉽게 설명합니다.
-2. 구체적인 예시와 코드 예제를 제공합니다.
-3. 개념 이해를 돕기 위해 비유와 실생활 사례를 활용합니다.
-4. 틀린 답변은 지적하되, 학생이 스스로 깨달을 수 있도록 유도합니다.
-5. 코드 작성 시 주석을 충분히 달고 설명합니다.
-6. 한국어로만 응답합니다.
-7. 학생의 수준에 맞춰 설명합니다.
-
-정보 교과의 주요 영역:
-- 프로그래밍 (Python, 기본 문법)
-- 알고리즘 (정렬, 탐색 등)
-- 자료구조 (배열, 리스트, 딕셔너리 등)
-- 데이터베이스 기초
-- 네트워크 기초
-- 보안 개념"""
+# 교사 시스템 프롬프트
+TEACHER_SYSTEM_PROMPT = "\n".join([
+    "당신은 경험 많은 고등학교 1학년 정보 교사입니다.",
+    "",
+    "역할 및 원칙:",
+    "1. 학생의 질문에 친절하고 이해하기 쉽게 설명합니다.",
+    "2. 구체적인 예시와 코드 예제를 제공합니다.",
+    "3. 개념 이해를 돕기 위해 비유와 실생활 사례를 활용합니다.",
+    "4. 틀린 답변은 지적하되, 학생이 스스로 깨달을 수 있도록 유도합니다.",
+    "5. 코드 작성 시 주석을 충분히 달고 설명합니다.",
+    "6. 한국어로만 응답합니다.",
+    "7. 학생의 수준에 맞춰 설명합니다.",
+    "",
+    "정보 교과의 주요 영역:",
+    "- 프로그래밍 (Python, 기본 문법)",
+    "- 알고리즘 (정렬, 탐색 등)",
+    "- 자료구조 (배열, 리스트, 딕셔너리 등)",
+    "- 데이터베이스 기초",
+    "- 네트워크 기초",
+    "- 보안 개념",
+])
 
 # 탭 구성
 tab1, tab2 = st.tabs(["💬 학습 가이드", "🔧 코드 생성"])
 
+# =====================
+# 탭1: 학습 가이드
+# =====================
 with tab1:
     st.subheader("학습 가이드 챗봇")
     st.markdown("정보 과목에 대해 궁금한 점을 물어보세요!")
-    
+
     # 메시지 표시
-    message_container = st.container()
-    
-    with message_container:
-        for message in st.session_state.messages:
-            if message["role"] == "user":
-                st.markdown(f"""
-                    <div class="chat-container student-message">
-                        <strong>📌 학생:</strong><br>{message["content"]}
-                    </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown(f"""
-                    <div class="chat-container teacher-message">
-                        <strong>👨‍🏫 선생님:</strong><br>{message["content"]}
-                    </div>
-                """, unsafe_allow_html=True)
-    
+    for message in st.session_state.messages:
+        if message["role"] == "user":
+            st.markdown(
+                '<div class="chat-container student-message">'
+                '<strong>📌 학생:</strong><br>' + message["content"] + '</div>',
+                unsafe_allow_html=True
+            )
+        else:
+            st.markdown(
+                '<div class="chat-container teacher-message">'
+                '<strong>👨‍🏫 선생님:</strong><br>' + message["content"] + '</div>',
+                unsafe_allow_html=True
+            )
+
     # 입력 영역
     col1, col2 = st.columns([5, 1])
-    
     with col1:
         user_input = st.text_input(
-            "질문을 입력하세요",
+            "질문 입력",
             placeholder="예: 변수란 무엇인가요?",
             label_visibility="collapsed"
         )
-    
     with col2:
         send_button = st.button("📤 전송", use_container_width=True)
-    
+
     # 메시지 처리
     if send_button and user_input and api_key:
         st.session_state.messages.append({
             "role": "user",
             "content": user_input
         })
-        
         try:
             client = anthropic.Anthropic(api_key=api_key)
-            
-            # API 호출
             response = client.messages.create(
                 model="claude-haiku-4-5-20251001",
                 max_tokens=2048,
-                system=st.session_state.teacher_instructions,
+                system=TEACHER_SYSTEM_PROMPT,
                 messages=st.session_state.messages
             )
-            
             assistant_message = response.content[0].text
             st.session_state.messages.append({
                 "role": "assistant",
                 "content": assistant_message
             })
-            
             st.rerun()
-            
         except anthropic.APIError as e:
-            st.error(f"API 오류: {str(e)}")
+            st.error("API 오류: " + str(e))
+
     elif send_button and not api_key:
-        st.warning("⚠️ API 키를 먼저 입력해주세요")
-    
+        st.warning("API 키를 먼저 입력해주세요")
+    elif send_button and not user_input:
+        st.warning("질문을 입력해주세요")
+
     # 대화 초기화 버튼
     if st.button("🔄 대화 초기화", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
 
+# =====================
+# 탭2: 코드 생성
+# =====================
 with tab2:
     st.subheader("🔧 코드 생성 어시스턴트")
     st.markdown("원하는 코드를 설명하면 생성해드립니다.")
-    
-    # 코드 생성 요청
+
     code_request = st.text_area(
         "코드 요청사항을 입력하세요",
         placeholder="예: 1부터 100까지의 합을 구하는 Python 코드를 만들어주세요",
         height=100
     )
-    
+
     col1, col2, col3 = st.columns(3)
-    
     with col1:
         language = st.selectbox(
             "프로그래밍 언어",
             ["Python", "Java", "C++", "JavaScript"],
             key="language"
         )
-    
     with col2:
         difficulty = st.selectbox(
             "난이도",
             ["초급", "중급", "고급"],
             key="difficulty"
         )
-    
     with col3:
         include_comments = st.checkbox("주석 포함", value=True)
-    
+
     generate_button = st.button("✨ 코드 생성", use_container_width=True)
-    
+
     if generate_button and code_request and api_key:
-        # 변수 정의
         comment_status = "포함" if include_comments else "미포함"
-        
-        # 코드 지시문 작성
-        code_instructions = "당신은 고등학교 1학년 정보 교사입니다.\n\n요청받은 코드를 작성할 때:\n1. 프로그래밍 언어: " + language + "\n2. 난이도: " + difficulty + "\n3. 주석: " + comment_status + "\n4. 코드는 실행 가능해야 합니다\n5. 충분한 설명을 함께 제공합니다\n6. 코드 블록은
+
+        # 리스트 join 방식으로 코드 지시문 작성 (특수문자 문제 완전 방지)
+        instructions_lines = [
+            "당신은 고등학교 1학년 정보 교사입니다.",
+            "",
+            "요청받은 코드를 작성할 때 아래 조건을 따르세요.",
+            "1. 프로그래밍 언어: " + language,
+            "2. 난이도: " + difficulty,
+            "3. 주석: " + comment_status,
+            "4. 코드는 실행 가능해야 합니다.",
+            "5. 충분한 설명을 함께 제공합니다.",
+            "6. 응답은 한국어로 작성합니다.",
+        ]
+        code_instructions = "\n".join(instructions_lines)
+
+        try:
+            client = anthropic.Anthropic(api_key=api_key)
+            response = client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=2048,
+                system=code_instructions,
+                messages=[{
+                    "role": "user",
+                    "content": code_request
+                }]
+            )
+            result = response.content[0].text
+            st.markdown("### 📝 생성된 코드 및 설명")
+            st.markdown(result)
+
+        except anthropic.APIError as e:
+            st.error("API 오류: " + str(e))
+
+    elif generate_button and not api_key:
+        st.warning("API 키를 먼저 입력해주세요")
+    elif generate_button and not code_request:
+        st.warning("코드 요청사항을 입력해주세요")
+
+# 푸터
+st.markdown("---")
+st.markdown(
+    "<div style='text-align:center; color:gray; font-size:12px;'>"
+    "👨‍🏫 고등학교 정보 교사 챗봇 | Claude Haiku 기반<br>"
+    "학습 보조 도구이며, 정확한 학습은 교과서와 수업을 참고하세요"
+    "</div>",
+    unsafe_allow_html=True
+)
