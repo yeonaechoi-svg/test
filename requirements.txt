@@ -1,2 +1,4 @@
-anthropic
-streamlit
+streamlit==1.28.1
+anthropic==0.7.1
+matplotlib==3.8.2
+numpy==1.24.3
